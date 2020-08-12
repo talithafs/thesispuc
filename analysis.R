@@ -1,0 +1,35 @@
+library(tibble)
+library(forecast)
+
+sols <- read.csv("solutions.csv",stringsAsFactors = F)
+orig <- read.csv("original.csv",stringsAsFactors = F)[1:nrow(sols),]
+
+n = ncol(sols)
+l = nrow(sols)
+
+df <- tibble(variable = rep(NA,n), lower = rep(0.1,n), vol = rep(0.1,n), autocorr = rep(0.1,n), .rows = r)
+df[,1] <- names(sols)
+
+for(i in 1:n){
+  
+  freq = round(sum(sols[,i] < orig[,i])*100/l,2)
+  vol = round(var(sols[,i]) - var(orig[,i]),2)
+  ar_sols = Arima(sols[,i], order = c(1,0,0),method="ML")
+  ar_orig = Arima(orig[,i], order = c(1,0,0),method="ML")
+  cf_sols = round(as.numeric(ar_sols$coef[1]),3)
+  cf_orig = round(as.numeric(ar_orig$coef[1]),3)
+  ar = cf_sols - cf_orig
+  
+  df[i,2:4] <- c(freq,vol,ar) 
+}
+
+avg <- gsub("\\.", "_", mean(df$lower[1:4]))
+nm <- paste0("analysis_",avg,".csv")
+
+f <- file(nm)
+write.csv(df, f, row.names = F)
+
+df <- read.csv(nm, stringsAsFactors = F)
+
+
+
